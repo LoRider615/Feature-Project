@@ -312,7 +312,8 @@ MonoBehaviour:
   turnSpeed: 90
   viewMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 8
+  timeToSpotPlayer: 2
 --- !u!1 &8429455794167274442
 GameObject:
   m_ObjectHideFlags: 0

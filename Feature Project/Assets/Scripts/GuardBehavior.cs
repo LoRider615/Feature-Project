@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GuardBehavior : MonoBehaviour
 {
@@ -11,22 +12,32 @@ public class GuardBehavior : MonoBehaviour
     public float waitTime = 3f;
     public float turnSpeed = 90f;
     public LayerMask viewMask;
+    public float timeToSpotPlayer = 2f;
+    public GameObject playerAlertBar1;
+    public GameObject playerAlertBar2;
 
     private float viewAngle;
     private Transform player;
     private Color originalSpotlightColor;
+    private float playerVisibleTimer;
+    private float spotRate = 1f;
 
     private void Awake()
     {
+
+        playerAlertBar1 = GameObject.Find("Exclamation");
+        playerAlertBar2 = GameObject.Find("Point");
+
         player = GameObject.FindGameObjectWithTag("Player").transform;
         originalSpotlightColor = spotlight.color;
 
         viewAngle = spotlight.spotAngle;
+
+        //fills and array with all the patrol points created in the editor
         Vector3[] waypoints = new Vector3[waypointHolder.childCount];
         for ( int i = 0; i < waypoints.Length; i++)
         {
             waypoints[i] = waypointHolder.GetChild(i).position;
-            //sets the waypoint height equal to the guards height, making it so the guard won't randomly move up and down if waypoints are different heights
             waypoints[i] = new Vector3(waypoints[i].x, transform.position.y, waypoints[i].z);
         }
         StartCoroutine(Patrol(waypoints));
@@ -35,18 +46,47 @@ public class GuardBehavior : MonoBehaviour
 
     private void Update()
     {
+        //player is within guard detection angle
         if (CanSeePlayer()) 
         {
-            spotlight.color = Color.red;
+            //fill up spotting meter
+            playerVisibleTimer += Time.deltaTime * spotRate;
+            if (!playerAlertBar1.activeInHierarchy)
+            {
+                //let player know they are being spotted
+                playerAlertBar1.SetActive(true);
+                playerAlertBar2.SetActive(true);
+            }
+
+            //if player is in shadow, guards will be slower to detect them
+            if (player.gameObject.GetComponent<ThirdPersonMovement>().inShadow)
+                spotRate = 0.8f;
+            else
+                spotRate = 1f;
         }
         else
         {
-            spotlight.color = originalSpotlightColor;
+            //player has exited the guards' detection angle
+            playerVisibleTimer -= Time.deltaTime;
+            playerAlertBar1.SetActive(false);
+            playerAlertBar2.SetActive(false);
+        }
+        playerVisibleTimer = Mathf.Clamp(playerVisibleTimer, 0 , timeToSpotPlayer);
+
+        //change color of guard light and player mark do indicate being spotted
+        spotlight.color = Color.Lerp(originalSpotlightColor, Color.red, playerVisibleTimer / (timeToSpotPlayer / spotRate));
+        playerAlertBar1.GetComponent<MeshRenderer>().material.color = Color.Lerp(originalSpotlightColor, Color.red, playerVisibleTimer / (timeToSpotPlayer / spotRate));
+        playerAlertBar2.GetComponent<MeshRenderer>().material.color = Color.Lerp(originalSpotlightColor, Color.red, playerVisibleTimer / (timeToSpotPlayer / spotRate));
+
+        //player has been caught and game is over
+        if (playerVisibleTimer >= timeToSpotPlayer)
+        {
+            print("Player Caught");
         }
     }
 
     /// <summary>
-    /// Uses gizmos to help set up guard patrolling paths in the editor
+    /// Using gizmos to help set up guard patrolling paths and adjust detection range
     /// </summary>
     private void OnDrawGizmos()
     {
@@ -68,7 +108,7 @@ public class GuardBehavior : MonoBehaviour
     /// <summary>
     /// Looping Logic for when guards should patrol their routes and player hasn't been spotted
     /// </summary>
-    /// <param name="waypoints"></param>
+    /// <param name="waypoints">Array of all the patrol points made in the editor</param>
     /// <returns></returns>
     IEnumerator Patrol(Vector3[] waypoints)
     {
@@ -105,7 +145,7 @@ public class GuardBehavior : MonoBehaviour
     /// <summary>
     /// Used to determine where the guard should look before moving to the next patrol point
     /// </summary>
-    /// <param name="lookTarget"></param>
+    /// <param name="lookTarget">Next patrol point</param>
     /// <returns></returns>
     IEnumerator Turn(Vector3 lookTarget)
     {
@@ -122,6 +162,10 @@ public class GuardBehavior : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Calculates whether or not the player is within the guards' "vision" box which is shown by the spotlight
+    /// </summary>
+    /// <returns></returns>
     private bool CanSeePlayer()
     {
         if (Vector3.Distance(transform.position, player.transform.position) < viewDistance)

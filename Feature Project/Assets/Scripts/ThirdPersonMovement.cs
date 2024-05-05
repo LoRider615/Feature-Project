@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
 /// <summary>
 /// Handles the third person movement which is seperate from the camera
 /// </summary>
@@ -9,10 +10,16 @@ public class ThirdPersonMovement : MonoBehaviour
 {
     private CharacterController controller;
     private PlayerInputs playerInputs;
-
+    
+    public Light directionalLight;
     public float speed = 6f;
     public float turnSmoothing = 0.1f;
     public Transform cam;
+    public bool inShadow = false;
+
+    //these are for the player to visualize being spotted
+    public GameObject exclamation;
+    public GameObject point;
 
     private float turnSmoothVelocity;
 
@@ -20,8 +27,14 @@ public class ThirdPersonMovement : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
 
+        exclamation.SetActive(false);
+        point.SetActive(false);
+
         playerInputs = new PlayerInputs();
         playerInputs.Enable();
+
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
     }
 
     // Update is called once per frame
@@ -50,5 +63,16 @@ public class ThirdPersonMovement : MonoBehaviour
             
         }
 
+        //uses the opposite rotation of the directional light and raycasts to see if an object is hit
+        //if hit comes back, that means player must be in shadow
+        Vector3 dir = directionalLight.transform.forward;
+        if (Physics.Raycast(transform.position, -dir, out RaycastHit shadowCheck, 1000f))
+            inShadow = true;
+        else 
+            inShadow = false;
     }
+
+    
+
+
 }
