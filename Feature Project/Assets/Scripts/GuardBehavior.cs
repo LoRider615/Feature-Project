@@ -12,9 +12,9 @@ public class GuardBehavior : MonoBehaviour
     public float waitTime = 3f;
     public float turnSpeed = 90f;
     public LayerMask viewMask;
-    public float timeToSpotPlayer = 2f;
-    public GameObject playerAlertBar1;
-    public GameObject playerAlertBar2;
+    public float timeToSpotPlayer = 1.5f;
+    public GameObject alertBar1;
+    public GameObject alertBar2;
 
     private float viewAngle;
     private Transform player;
@@ -24,9 +24,8 @@ public class GuardBehavior : MonoBehaviour
 
     private void Awake()
     {
-
-        playerAlertBar1 = GameObject.Find("Exclamation");
-        playerAlertBar2 = GameObject.Find("Point");
+        alertBar1.SetActive(false);
+        alertBar2.SetActive(false);
 
         player = GameObject.FindGameObjectWithTag("Player").transform;
         originalSpotlightColor = spotlight.color;
@@ -51,12 +50,10 @@ public class GuardBehavior : MonoBehaviour
         {
             //fill up spotting meter
             playerVisibleTimer += Time.deltaTime * spotRate;
-            if (!playerAlertBar1.activeInHierarchy)
-            {
-                //let player know they are being spotted
-                playerAlertBar1.SetActive(true);
-                playerAlertBar2.SetActive(true);
-            }
+
+            //let player know they are being spotted
+            alertBar1.SetActive(true);
+            alertBar2.SetActive(true);
 
             //if player is in shadow, guards will be slower to detect them
             if (player.gameObject.GetComponent<ThirdPersonMovement>().inShadow)
@@ -68,15 +65,15 @@ public class GuardBehavior : MonoBehaviour
         {
             //player has exited the guards' detection angle
             playerVisibleTimer -= Time.deltaTime;
-            playerAlertBar1.SetActive(false);
-            playerAlertBar2.SetActive(false);
+            alertBar1.SetActive(false);
+            alertBar2.SetActive(false);
         }
         playerVisibleTimer = Mathf.Clamp(playerVisibleTimer, 0 , timeToSpotPlayer);
 
         //change color of guard light and player mark do indicate being spotted
         spotlight.color = Color.Lerp(originalSpotlightColor, Color.red, playerVisibleTimer / (timeToSpotPlayer / spotRate));
-        playerAlertBar1.GetComponent<MeshRenderer>().material.color = Color.Lerp(originalSpotlightColor, Color.red, playerVisibleTimer / (timeToSpotPlayer / spotRate));
-        playerAlertBar2.GetComponent<MeshRenderer>().material.color = Color.Lerp(originalSpotlightColor, Color.red, playerVisibleTimer / (timeToSpotPlayer / spotRate));
+        alertBar1.GetComponent<MeshRenderer>().material.color = Color.Lerp(originalSpotlightColor, Color.red, playerVisibleTimer / (timeToSpotPlayer / spotRate));
+        alertBar2.GetComponent<MeshRenderer>().material.color = Color.Lerp(originalSpotlightColor, Color.red, playerVisibleTimer / (timeToSpotPlayer / spotRate));
 
         //player has been caught and game is over
         if (playerVisibleTimer >= timeToSpotPlayer)

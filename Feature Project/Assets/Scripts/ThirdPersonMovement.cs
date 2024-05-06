@@ -17,18 +17,11 @@ public class ThirdPersonMovement : MonoBehaviour
     public Transform cam;
     public bool inShadow = false;
 
-    //these are for the player to visualize being spotted
-    public GameObject exclamation;
-    public GameObject point;
-
     private float turnSmoothVelocity;
 
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
-
-        exclamation.SetActive(false);
-        point.SetActive(false);
 
         playerInputs = new PlayerInputs();
         playerInputs.Enable();
