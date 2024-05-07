@@ -3,6 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+/// <summary>
+/// Sharkey, Logan
+/// 5/7/2024
+/// Handles the movement of the guards, and the detection of the player as well
+/// </summary>
 public class GuardBehavior : MonoBehaviour
 {
     public Light spotlight;
@@ -78,7 +83,9 @@ public class GuardBehavior : MonoBehaviour
         //player has been caught and game is over
         if (playerVisibleTimer >= timeToSpotPlayer)
         {
-            print("Player Caught");
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            SceneManager.LoadScene(1);
         }
     }
 
@@ -120,7 +127,14 @@ public class GuardBehavior : MonoBehaviour
         while (true)
         {
             //moves towards the next waypoint
-            transform.position = Vector3.MoveTowards(transform.position, targetWaypointLoc, speed * Time.deltaTime);
+            if (!CanSeePlayer())
+            {
+                yield return StartCoroutine(Turn(targetWaypointLoc));
+                transform.position = Vector3.MoveTowards(transform.position, targetWaypointLoc, speed * Time.deltaTime);
+            }
+            else if (CanSeePlayer() && playerVisibleTimer >= timeToSpotPlayer / 3)
+                yield return StartCoroutine(Turn(player.position));
+            
 
             //once waypoint is reached
             if (transform.position == targetWaypointLoc)
@@ -153,14 +167,24 @@ public class GuardBehavior : MonoBehaviour
         //if the guard is not turned towards the correct angle, turn towards next waypoint
         while (Mathf.Abs(Mathf.DeltaAngle(transform.eulerAngles.y, targetAngle)) > 0.05f)
         {
-            float angle = Mathf.MoveTowardsAngle(transform.eulerAngles.y, targetAngle, turnSpeed * Time.deltaTime);
+            float angle;
+            //after a few moments of spotting player, guard will track player making it harder to escape
+            if (CanSeePlayer())
+            {
+                angle = Mathf.MoveTowardsAngle(transform.eulerAngles.y, targetAngle, (turnSpeed / 2) * Time.deltaTime);
+            }
+            //if not looking at player, this is used to turn towards the next waypoint
+            else
+            {
+                angle = Mathf.MoveTowardsAngle(transform.eulerAngles.y, targetAngle, turnSpeed * Time.deltaTime);
+            }
             transform.eulerAngles = Vector3.up * angle;
             yield return null;
         }
     }
 
     /// <summary>
-    /// Calculates whether or not the player is within the guards' "vision" box which is shown by the spotlight
+    /// Calculates whether or not the player is within the guards' "vision" range which is shown by the spotlight
     /// </summary>
     /// <returns></returns>
     private bool CanSeePlayer()
